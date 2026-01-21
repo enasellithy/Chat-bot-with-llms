@@ -1,17 +1,14 @@
 import os
 from typing import List
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
 import faiss
 import numpy as np
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
-# from rank_bm25 import BM25Okapi
-from TextClean import TextCleaner
-# from DatasetPrep import DatasetPrParation 
 from prompt_manager import PromptManager
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 embedding_model = "all-MiniLM-L6-v2"
 max_words = 50
 overlap = 10
