@@ -1,24 +1,24 @@
 import re
-import tiktoken
+from TextClean import TextCleaner
 
 class PromptManager:
     def __init__(self):
-        self.enc = tiktoken.get_encoding("cl100k_base")
+        self.cleaner = TextCleaner(keep_numbers=True)
 
     def count_tokens(self, text: str) -> int:
-        return len(self.enc.encode(text))
+        return len(text.split())
 
     def compress_text(self, context: str, question: str, context_topic: str = "") -> str:
-        question_lower = question.lower()
-        sentences = [s.strip() for s in re.split(r"[\n.]", context) if s.strip()]
+        cleaned_context = self.cleaner.clean(context)
+        cleaned_question = self.cleaner.clean(question)
+        question_lower = cleaned_question.lower()
+        sentences = [s.strip() for s in re.split(r"[\n.]", cleaned_context) if s.strip()]
         
-        # كلمات مفتاحية لكل نوع من الإجازات
         categories = {
             "sick": ["sick", "medical", "certificate", "doctor"],
             "annual": ["annual", "balance", "request", "advance"]
         }
 
-        # تحديد الفئة الحالية بناءً على السؤال
         current_category = None
         for cat, words in categories.items():
             if any(w in question_lower for w in words):

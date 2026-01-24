@@ -5,6 +5,11 @@ import numpy as np
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 from prompt_manager import PromptManager
+from TextClean import TextCleaner
+from DynamicSectionDetector import DynamicSectionDetector
+import warnings
+
+warnings.filterwarnings("ignore")
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -12,10 +17,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 embedding_model = "all-MiniLM-L6-v2"
 max_words = 50
 overlap = 10
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="torch.cuda")
 
@@ -60,13 +61,35 @@ class RAG:
         self.data_path = Path(data_path)
         self.chunker = Chunker()
         self.embedder = Embedder()
+        self.cleaner = TextCleaner(keep_numbers=True)
         self.chunks = []
         self.retriever = None
         self.prompt_manager = PromptManager()
+        self.section_detector = DynamicSectionDetector()
         
     def load_document(self):
         with open(self.data_path, 'r', encoding="utf-8") as f:
-            return f.read()
+            text = f.read()
+            self.section_detector.build_from_document(text)
+            clean_text = self.cleaner.clean(text)
+        return clean_text
+    
+    def retrieve_with_dynamic_filter(self, query: str, top_k:int = 3) -> List[str]:
+        target_section = self.section_detector.detect_section_for_query(query)
+        if not target_section:
+            return self.retrieve(query,top_k)
+        query_embedding = self.embedder.transform([query])
+        sims, idx = self.retriever.search(query_embedding, top_k)
+        filtered_chunks = []
+        section_keywords = self.section_detector.section_keywords.get(target_section, [])
+        for i in idx[0]:
+            chunk = self.chunks[i]
+            chunk_lower = chunk.lower()
+            if len(filtered_chunks) >= top_k:
+                break
+            if len(filtered_chunks) > 3:
+                return self.retrieve(query, top_k)
+        return filtered_chunks[:top_k]
     
     def build(self):
         text = self.load_document()
@@ -87,21 +110,13 @@ class RAG:
         return prompt, context
     
     def process_query(self, query: str, top_k: int = 5, chat_history: List = None):
-        current_query_words = set(query.lower().split())
-        sick_words = {"sick", "medical", "doctor"}
-        annual_words = {"annual", "vacation", "balance"}
-        
-        context_topic = ""
-        if chat_history:
-            last_user_query = chat_history[-1]["user"].lower()
-            if any(w in query.lower() for w in sick_words | annual_words):
-                 context_topic = "" 
-            else:
-                 context_topic = last_user_query
-
-        search_query = f"{context_topic} {query}".strip()
-        retrieved_chunks = self.retrieve(search_query, top_k)
+        cleaned_query = self.cleaner.clean(query)        
+        retrieved_chunks = self.retrieve_with_dynamic_filter(query, top_k)
         context = "\n".join(retrieved_chunks)
+        prompt = self.prompt_manager.compress_text(context, cleaned_query)
+        target_section = self.section_detector.detect_section_for_query(query)
+        if target_section:
+            keywords = self.section_detector.section_keywords.get(target_section, [])
+            print(f"[DEBUG] Section: {target_section}, Keywords: {keywords[:3]}")
         
-        prompt = self.prompt_manager.compress_text(context, query, context_topic)
         return {"query": query, "prompt": prompt, "context": context}

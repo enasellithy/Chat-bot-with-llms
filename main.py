@@ -1,9 +1,18 @@
 import os
 import sys
 from rag import RAG
+from EnhancedRAG import EnhancedRAG
+import warnings
+warnings.filterwarnings("ignore")
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+
 
 if __name__ == "__main__":
-    rag = RAG(data_path="hr_manual.txt")
+    # rag = RAG(data_path="hr_manual.txt")
+    rag = EnhancedRAG(data_path="hr_manual.txt")
     rag.build()
     print("Downloaded and built RAG system successfully.")
     
