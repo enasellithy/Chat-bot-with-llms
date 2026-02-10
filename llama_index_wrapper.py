@@ -79,8 +79,6 @@ class LlamaIndexRAG:
         if not self.documents:
             raise ValueError("No documents to index")
             
-        # إذا كان KeywordExtractor بحاجة لـ LLM وليس لدينا واحد فعال،
-        # نستخدم تحويلات أبسط
         if isinstance(Settings.llm, type) or hasattr(Settings.llm, '__class__') and Settings.llm.__class__.__name__ == 'MockLLM':
             cleaned_nodes = IngestionPipeline(
                 transformations=[
