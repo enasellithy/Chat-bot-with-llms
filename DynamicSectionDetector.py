@@ -78,10 +78,8 @@ class DynamicSectionDetector:
         return True
     
     def build_from_document(self, document_text: str):
-        """بناء قاعدة الكلمات المفتاحية من المستند"""
         sections = self.extract_sections_from_text(document_text)
         
-        # تحويل الأسماء الطويلة إلى أسماء مختصرة
         for full_title, keywords in sections.items():
             short_name = self._get_short_section_name(full_title)
             self.section_keywords[short_name] = keywords

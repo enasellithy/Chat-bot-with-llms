@@ -3,7 +3,8 @@ import unicodedata
 from typing import Optional
 
 class TextCleaner:    
-    def __init__(self, keep_numbers: bool = False, custom_stopwords: Optional[list] = None):
+    def __init__(self, keep_numbers: bool = False,
+                 custom_stopwords: Optional[list] = None):
         self.keep_numbers = keep_numbers
         
         self.base_stopwords = {
@@ -27,10 +28,8 @@ class TextCleaner:
     
     def remove_special_chars(self, text: str, lang: str) -> str:
         if lang == 'ar':
-            # احتفظ بكل شيء تقريباً ما عدا الرموز الخاصة
             pattern = r'[^\u0600-\u06FF0-9\s\.\-]'
         else: 
-            # احتفظ بالأحرف الإنجليزية والأرقام والنقاط والواصلات
             pattern = r'[^a-zA-Z0-9\s\.\-]'
         
         text = re.sub(pattern, ' ', text)
