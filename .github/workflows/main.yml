@@ -1,0 +1,19 @@
+name: Generate AI Documentation
+on: [push]
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Call Groq API
+        run: |
+          curl -X POST "https://api.groq.com/openai/v1/chat/completions" \
+          -H "Authorization: Bearer ${{ secrets.GROQ_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "model": "llama3-70b-8192",
+            "messages": [{"role": "user", "content": "Analyze this code and generate a Mermaid.js architecture diagram for the README..."}]
+          }'
